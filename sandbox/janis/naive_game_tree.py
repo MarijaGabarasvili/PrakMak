@@ -1,6 +1,9 @@
 import random
 import sys
 
+# for testing
+from collections import deque
+
 class GameStateNode:
     def __init__(self, sequence : str, score_player1 : int, score_player2 : int, current_player : int):
         self.sequence = sequence              # A list or string of '0' and '1'
@@ -119,6 +122,7 @@ class GameTree:
         child_count = len(node.children)
         for i, child in enumerate(node.children):
             GameTree._print_tree(child, new_prefix, i == child_count - 1)
+            
     @staticmethod
     def _get_readable_size(size_in_bytes: int) -> str:
         """Converts bytes into a human-readable format (KB, MB, GB) with integer values."""
@@ -134,3 +138,82 @@ class GameTree:
     def print_stats(self):
         formated_node_count = f"{self.stats_node_count:_}".replace("_", " ")
         print(f"{formated_node_count} nodes, {GameTree._get_readable_size(self.stats_size_in_bytes)}")
+
+def print_unique_states_at_level(root):
+    if not root:
+        print("Tree is empty.")
+        return
+
+    queue = deque([(root, 0)])  # (node, level)
+    level_counts = {}
+    unique_states = {}
+
+    while queue:
+        node, level = queue.popleft()
+
+        # Initialize level if not seen
+        if level not in level_counts:
+            level_counts[level] = 0
+            unique_states[level] = set()
+
+        # Increment total count
+        level_counts[level] += 1
+
+        # Store unique states based on (sequence, P1 score, P2 score)
+        state_key = (tuple(node.sequence), node.score_player1, node.score_player2)
+        unique_states[level].add(state_key)
+
+        # Add children to queue for next level
+        for child in node.children:
+            queue.append((child, level + 1))
+
+    print("\n### Node Count per Level")
+    print("| Level | Total States | Unique States |")
+    print("|-------|--------------|---------------|")
+
+    for level in sorted(level_counts.keys()):
+        total = f"{level_counts[level]:,}"  # Add thousand separator
+        unique = f"{len(unique_states[level]):,}"  # Add thousand separator
+        print(f"| {level:<5} | {total:<12} | {unique:<13} |")
+        
+        
+from collections import deque
+
+def print_states_at_level_sorted(root, target_level):
+    """Prints all nodes at a specific level, sorting by sequence and scores, formatted as a Markdown table."""
+
+    if not root:
+        print("Tree is empty.")
+        return
+
+    queue = deque([(root, 0)])  # (node, current_level)
+    level_nodes = []  # Stores nodes at target_level
+
+    # Perform BFS to collect nodes at target_level
+    while queue:
+        node, level = queue.popleft()
+
+        if level == target_level:
+            level_nodes.append(node)
+
+        if level > target_level:
+            break  # Stop searching deeper
+
+        for child in node.children:
+            queue.append((child, level + 1))
+
+    if not level_nodes:
+        print(f"No nodes found at level {target_level}.")
+        return
+
+    # Sort nodes by (sequence, player 1 score, player 2 score)
+    level_nodes.sort(key=lambda node: (tuple(node.sequence), node.score_player1, node.score_player2))
+
+    # Print Markdown table
+    print(f"\n### Nodes at Level {target_level}")
+    print("| Sequence        | P1 Score | P2 Score |")
+    print("|----------------|----------|----------|")
+
+    for node in level_nodes:
+        sequence_str = "".join(map(str, node.sequence))  # Convert list to string
+        print(f"| {sequence_str:<16} | {node.score_player1:<8} | {node.score_player2:<8} |")
