@@ -22,14 +22,13 @@ start = 0
 algorithm = 0
 
 def new_window(length):
+    line = [random.choice([0, 1]) for _ in range(length)]
     new_layout = [
                 [sg.Text("New Window", font=("Helvetica", 20))],
-                [sg.Text("Generated Sequence: {line}")],
+                [sg.Text(f"Generated Sequence: {line}")],
                 [sg.Button("Close")]
             ]
     new_window = sg.Window("New Window", new_layout)
-    line = " ".join(str(random.choice([0, 1])) for _ in range(length))
-    window['-OUTPUT-'].update(line)
     while True:
         event, values = new_window.read()
         if event == sg.WINDOW_CLOSED or event == "Close":
@@ -55,17 +54,16 @@ while True:
         algorithm = 1
     if event == "Algorithm 2":
         algorithm = 2
-    try:
-        if start == 0:
-            window['-OUTPUT-'].update("Please select a player to start.")
-        if algorithm == 0:  
-            window['-OUTPUT-'].update("Please select an algorithm.")
-    except ValueError:
-        window['-OUTPUT-'].update("Please select a player to start and an algorithm.")
+    if start == 0:
+        window['-OUTPUT-'].update("Please select a player to start.")
+    if algorithm == 0:  
+        window['-OUTPUT-'].update("Please select an algorithm.")
     if event == "Confirm":
-        if confirm == True and start != 0 and algorithm != 0:
+        if confirm and start != 0 and algorithm != 0:
             window.close()
             new_window(length)
+
+window.close()
         
 
 
