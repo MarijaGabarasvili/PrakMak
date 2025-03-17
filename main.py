@@ -8,7 +8,7 @@ layout = [
     font=("Helvetica", 20)), sg.InputText(key='-LENGTH-')],
     [sg.Text("", size=(15, 1)), sg.Button("Algorithm 1"), sg.Text("", size=(30, 1)), 
     sg.Text("", size=(15, 1)), sg.Button("Algorithm 2"), sg.Text("", size=(15, 1))],
-    [sg.Text("", size=(5, 1))],
+    [sg.Text("")],
     [sg.Text(""), sg.Button("Confirm"), sg.Text("", size=(15, 1))],
 
     [sg.Text("", key='-OUTPUT-')]
@@ -20,6 +20,27 @@ confirm = False
 start = 0
 # to choose the algorithm (by default first algorithm)
 algorithm = 0
+points = 0 #score
+
+def rules(pressed):
+    global points
+    number = 0 
+    if pressed[0] == 0 and pressed[1] == 0:
+        points += 1
+        number = 1
+    elif pressed[0] == 0 and pressed[1] == 1:
+        points -= 1
+        number = 0
+    elif pressed[0] == 1 and pressed[1] == 0:
+        points -= 1
+        number = 1
+    elif pressed[0] == 1 and pressed[1] == 1:
+        points += 1
+        number = 0
+    return number
+
+    
+
 
 def new_window(length):
     line = [random.choice([0, 1]) for _ in range(length)]
@@ -31,23 +52,31 @@ def new_window(length):
         [sg.Button("Close")]
     ]
     new_window = sg.Window("New Window", new_layout)
-    pressed = None
-
+    pressed_butt = []
     while True:
         event, values = new_window.read()
         if event == sg.WINDOW_CLOSED or event == "Close":
             break
         if event.startswith('-BTN_'):
             index = int(event.split('_')[1].split('-')[0])
-            if pressed is None or abs(pressed - index) == 1:
-                pressed = index
+            if len(pressed_butt) < 2 and (not pressed_butt or abs(pressed_butt[-1] - index) == 1):
+                pressed_butt.append(index)
                 for i in range(length):
-                    if abs(index - i) == 1:
+                    if len(pressed_butt) == 1 and abs(index - i) == 1:
                         new_window[f'-BTN_{i}-'].update(disabled=False)
                     else:
                         new_window[f'-BTN_{i}-'].update(disabled=True)
                 new_window[event].update(disabled=True)
-    new_window.close()
+            if len(pressed_butt) == 2:
+                number = rules(pressed_butt)
+                line[pressed_butt[0]] = number
+                del line[pressed_butt[1]]
+                new_window['-SEQUENCE-'].update(f"Generated Sequence: {line}")
+                for i in range(len(line)):
+                    new_window[f'-BTN_{i}-'].update(str(line[i]), disabled=False)
+                pressed_butt = []
+                break
+    
 
 while True:
     event, values = window.read()
