@@ -25,16 +25,29 @@ def new_window(length):
     line = [random.choice([0, 1]) for _ in range(length)]
     button_row = [sg.Button(str(num), key=f'-BTN_{i}-') for i, num in enumerate(line)]
     new_layout = [
-                [sg.Text("New Window", font=("Helvetica", 20))],
-                [sg.Text(f"Generated Sequence: {line}")],
-                button_row,
-                [sg.Button("Close")]
-            ]
+        [sg.Text("New Window", font=("Helvetica", 20))],
+        [sg.Text(f"Generated Sequence: {line}")],
+        button_row,
+        [sg.Button("Close")]
+    ]
     new_window = sg.Window("New Window", new_layout)
+    pressed = None
+
     while True:
         event, values = new_window.read()
         if event == sg.WINDOW_CLOSED or event == "Close":
             break
+        if event.startswith('-BTN_'):
+            index = int(event.split('_')[1].split('-')[0])
+            if pressed is None or abs(pressed - index) == 1:
+                pressed = index
+                for i in range(length):
+                    if abs(index - i) == 1:
+                        new_window[f'-BTN_{i}-'].update(disabled=False)
+                    else:
+                        new_window[f'-BTN_{i}-'].update(disabled=True)
+                new_window[event].update(disabled=True)
+    new_window.close()
 
 while True:
     event, values = window.read()
