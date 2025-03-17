@@ -23,9 +23,11 @@ algorithm = 0
 
 def new_window(length):
     line = [random.choice([0, 1]) for _ in range(length)]
+    button_row = [sg.Button(str(num), key=f'-BTN_{i}-') for i, num in enumerate(line)]
     new_layout = [
                 [sg.Text("New Window", font=("Helvetica", 20))],
                 [sg.Text(f"Generated Sequence: {line}")],
+                button_row,
                 [sg.Button("Close")]
             ]
     new_window = sg.Window("New Window", new_layout)
@@ -40,7 +42,7 @@ while True:
         break
     try:
         length = int(values['-LENGTH-'])
-        if length <= 15 or length >= 25:
+        if length <= 14 or length >= 26:
             confirm = False
         else:
             confirm = True
