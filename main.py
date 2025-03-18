@@ -2,12 +2,12 @@ import PySimpleGUI as sg
 import random
 
 layout = [
-    [sg.Text("", size=(16, 1)), sg.Button("Player 1"), sg.Text("", size=(33, 1)), 
+    [sg.Text("Choose Player:", font=("Helvetica", 16)), sg.Button("Player 1"), sg.Text("", size=(5, 1)), 
     sg.Text("", size=(15, 1)), sg.Button("Player 2"), sg.Text("", size=(15, 1))],
     [sg.Text("Enter the length of the binary sequence:",
-    font=("Helvetica", 20)), sg.InputText(key='-LENGTH-')],
-    [sg.Text("", size=(15, 1)), sg.Button("Algorithm 1"), sg.Text("", size=(30, 1)), 
-    sg.Text("", size=(15, 1)), sg.Button("Algorithm 2"), sg.Text("", size=(15, 1))],
+    font=("Helvetica", 16)), sg.InputText(key='-LENGTH-')],
+    [sg.Text("Choose Algorithm:", font=("Helvetica", 16)),
+     sg.Button("Algorithm 1"), sg.Text("", size=(5, 1)), sg.Button("Algorithm 2"), sg.Text("", size=(15, 1))],
     [sg.Text("")],
     [sg.Text(""), sg.Button("Confirm"), sg.Text("", size=(15, 1))],
 
@@ -22,6 +22,7 @@ start = 0
 algorithm = 0
 points = 0 #score
 
+# take from game tree file
 def rules(pressed):
     global points
     number = 0 
@@ -43,7 +44,7 @@ def rules(pressed):
 
 
 def new_window(length):
-    line = [random.choice([0, 1]) for _ in range(length)]
+    line = [random.choice([0, 1]) for _ in range(length)] #take to the game tree file
     button_row = [sg.Button(str(num), key=f'-BTN_{i}-') for i, num in enumerate(line)]
     new_layout = [
         [sg.Text("New Window", font=("Helvetica", 20))],
@@ -109,6 +110,3 @@ while True:
 
 window.close()
         
-
-
-
