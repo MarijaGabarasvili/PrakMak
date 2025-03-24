@@ -1,3 +1,4 @@
+# Should include GUI and the main logic of the program
 import PySimpleGUI as sg
 import random
 
