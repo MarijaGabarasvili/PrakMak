@@ -1,6 +1,9 @@
 # GameState and GameTree classes for a simple game tree in Mākslīgā intelekta pamati course.
-# v1.0, 04.03.2025
+# optimized by storing duplicates in one level as single nodes
+# v1, 24.03.2025 should be cleanded up and optimized
 # Janis Snikers
+# ------------------------------------------------------------------------------------------------------------
+# @TODO CPU is not fully utilized. Need to explore optimization options. Currently tested up to 23 digits
 
 import random
 import sys
@@ -14,6 +17,8 @@ class GameState:
     """Score of player 1."""
     score_player2: int
     """Score of player 2."""
+    children: list
+    """List of subsequent states."""
     
     def __init__(self, sequence : str, score_player1 : int, score_player2 : int):
         self.sequence = sequence              # Now stored as a string of '0' and '1'
@@ -42,8 +47,6 @@ class GameTree:
     """Pointer to the root node of the game tree."""
     current_state: GameState
     """Pointer to the current state in the game tree."""
-    current_player: int
-    """Current player (1 or 2)."""
     current_depth: int
     """Current move number (depth of the tree) in the game."""
     
@@ -55,25 +58,25 @@ class GameTree:
         self.current_state = self.root
         self.depth_limit = depth_limit
         self.current_depth = 0
-        self.current_player = 1
-        self._build_tree(self.root)
+        self._build_tree()
         
     def __repr__(self):
         return (f"Move #: {self.current_depth} | "
-                f"Player: {self.current_player} | "
+                f"Player: {self.get_current_player()} | "
                 f"Sequence: {self.current_state.sequence} | "
                 f"Score: {self.current_state.score_player1}:{self.current_state.score_player2} | ")
 
     def move_to_next_state_by_child(self, child_node : GameState):
         """Advances the game to the next state based on the selected child node.
-        Purges all children nodes that are not needed anymore and generates the next game tree level if needed."""	
+        Purges all children nodes that are not needed anymore and generates the next game tree level if needed."""
+        #print(f"Moving from: {print(self.current_state)}\nto: {print(child_node)}")
+        print(f"Moving from: [{self.current_state}] to [{child_node}]")	
         if child_node not in self.current_state.children:
             raise ValueError("Given node is not a child of the current state.")
         self.current_state.children = [child_node]
         self.current_state = child_node
         self.current_depth += 1
-        self.current_player = 1 if self.current_depth % 2 == 0 else 2
-        self._build_tree(self.current_state)
+        self._build_tree()
     
     def move_to_next_state_by_move(self, first_digit_to_join: int):
         """
@@ -92,40 +95,51 @@ class GameTree:
         # Advance
         self.current_state = new_node
         self.current_depth += 1
-        self.current_player = 1 if self.current_depth % 2 == 0 else 2
 
         # (Optional) expand the new node's children if within depth
-        self._build_tree(self.current_state)
+        self._build_tree()
         
-    def current_player(self):
+    def get_current_player(self):
         """Returns the current player (1 or 2)."""
         return 1 if self.current_depth % 2 == 0 else 2
     
     @staticmethod       
-    def print_tree(node, prefix="", is_last=True):
+    def print_tree(node, prefix="", is_last=True, level=0):
         """Prints the tree structure starting from the given node. Use with caution for large trees."""
         connector = "└── " if is_last else "├── "
-        print(prefix + connector + str(node))
+        color_code = 31 if level % 2 == 0 else 32
+        text_with_color = f"\033[{color_code}m{node}\033[0m"
+        print(prefix + connector + text_with_color)
         
-        new_prefix = prefix + ("    " if is_last else "│   ")
+        new_prefix = prefix + ("        " if is_last else "│       ")
         
         child_count = len(node.children)
         for i, child in enumerate(node.children):
-            GameTree.print_tree(child, new_prefix, i == child_count - 1)
+            GameTree.print_tree(child, new_prefix, i == child_count - 1, level=level + 1)
     
-    @staticmethod        
-    def print_stats(node : GameState):
-        """ Recalculates node count and memory usage from the current state down."""
+    @staticmethod
+    def print_stats(node: GameState):
+        """
+        Recalculates node count and memory usage from the current state down,
+        without counting duplicates.
+        """
+        visited = set()
         node_count = 0
         size_in_bytes = 0
 
-        def traverse(node):
+        def traverse(n: GameState):
             nonlocal node_count, size_in_bytes
+            # Use 'id(n)' to ensure we only count a node object once
+            if id(n) in visited:
+                return
+            visited.add(id(n))
+
             node_count += 1
-            size_in_bytes += GameState.get_size(node)
-            for child in node.children:
+            size_in_bytes += GameState.get_size(n)
+            for child in n.children:
                 traverse(child)
 
+        # Start traversal
         traverse(node)
         
         def _get_readable_size(size_in_bytes: int) -> str:
@@ -137,24 +151,51 @@ class GameTree:
                 return f"{size_in_bytes // 1024} KB"
             else:
                 return f"{size_in_bytes} Bytes"  # Less than 1 KB
-        
+
         formated_node_count = f"{node_count:_}".replace("_", " ")
         print(f"{formated_node_count} nodes, {_get_readable_size(size_in_bytes)}")
 
-    def _build_tree(self, node, depth: int = 0):
+    def _build_tree(self):
         """
-        Recursively build or expand the tree down to the depth_limit (DFS).
+        Build the game tree up to self.depth_limit layers, unifying duplicate children
+        across each layer (i.e., if two parents at the same layer generate an identical
+        (sequence, score_p1, score_p2) child, they will reference the same child node).
         """
-        if depth >= self.depth_limit:
-            return
-        if len(node.sequence) <= 1:
-            return
+        current_layer = [self.root]
+        depth = 0
 
-        if not node.children:
-            node.children = self._generate_children(node, depth)
+        while depth < (self.depth_limit + self.current_depth):
+            parents_and_children = []
 
-        for child in node.children:
-            self._build_tree(child, depth + 1)
+            # 1) Generate children for each node in the current layer (if needed)
+            for node in current_layer:
+                # Only generate if node has length > 1 and hasn't generated children yet
+                if len(node.sequence) > 1 and not node.children:
+                    node.children = self._generate_children(node, depth)
+
+                # Keep track of (parent, [children]) to unify references
+                parents_and_children.append((node, node.children))
+
+            # 2) Unify duplicate children across the entire layer
+            layer_dict = {}  # maps (sequence, score_p1, score_p2) -> canonical GameState
+            for parent, child_list in parents_and_children:
+                for i, child in enumerate(child_list):
+                    key = (child.sequence, child.score_player1, child.score_player2)
+                    if key not in layer_dict:
+                        layer_dict[key] = child  # first time we see this child
+                    else:
+                        # Duplicate => replace the parent's child reference
+                        parent.children[i] = layer_dict[key]
+
+            # 3) Prepare the next layer
+            # All unique children are taken from layer_dict
+            next_layer = list(layer_dict.values())
+            if not next_layer:
+                break
+
+            current_layer = next_layer
+            depth += 1
+
 
     @staticmethod
     def _generate_random_sequence(length: int) -> str:
@@ -214,55 +255,64 @@ class GameTree:
     @staticmethod
     def _generate_children(parent_node: GameState, depth: int = 0):
         """
-        Generate all child GameStates, but now re-use the _merge_pair helper
-        so we don't duplicate logic.
+        Generate all child GameStates, ensuring no duplicates are stored
+        if (sequence, score_player1, score_player2) already exists.
         """
         children = []
+        seen = set()
         for i in range(len(parent_node.sequence) - 1):
-            # Just call _merge_pair for each possible pair
             child = GameTree._merge_pair(parent_node, i, depth)
-            children.append(child)
+            child_key = (child.sequence, child.score_player1, child.score_player2)
+            if child_key not in seen:
+                seen.add(child_key)
+                children.append(child)
         return children
 
     @staticmethod
-    def print_unique_states(game_tree_root : GameState):
+    def print_unique_states(game_tree_root: GameState):
         """
-        Prints total and unique node counts at each level, based on (sequence, score1, score2).
+        Prints total and unique node counts at each level.
+        Total states is the sum of frequencies (i.e. count of duplicate references),
+        while unique states is the number of distinct nodes (by identity).
         """
         if not game_tree_root:
             print("Tree is empty.")
             return
 
-        queue = deque([(game_tree_root, 0)])  # (node, level)
-        level_counts = {}
-        unique_states = {}
+        # Dictionary mapping level -> { node_id: (node, frequency) }
+        level_dict = {}
+        level_dict[0] = { id(game_tree_root): (game_tree_root, 1) }
+        current_level = 0
 
-        while queue:
-            node, level = queue.popleft()
+        # Build level-by-level counts until no children are found
+        while True:
+            next_level = {}
+            # Iterate over all nodes at the current level
+            for node_id, (node, freq) in level_dict[current_level].items():
+                # Expand children (each node is expanded only once)
+                for child in node.children:
+                    child_id = id(child)
+                    # Increase frequency if already seen at next level
+                    if child_id in next_level:
+                        existing_node, existing_freq = next_level[child_id]
+                        next_level[child_id] = (existing_node, existing_freq + freq)
+                    else:
+                        next_level[child_id] = (child, freq)
+            # If no nodes at the next level, stop
+            if not next_level:
+                break
+            level_dict[current_level + 1] = next_level
+            current_level += 1
 
-            if level not in level_counts:
-                level_counts[level] = 0
-                unique_states[level] = set()
-
-            # Increment total count
-            level_counts[level] += 1
-
-            # Store unique states based on (sequence, P1 score, P2 score)
-            state_key = (node.sequence, node.score_player1, node.score_player2)
-            unique_states[level].add(state_key)
-
-            # Add children to queue
-            for child in node.children:
-                queue.append((child, level + 1))
-
+        # Print the results level by level
         print("\n### Node Count per Level")
         print("| Level | Total States | Unique States |")
-        print("|-------|--------------|---------------|")
+        print("|-------|-------------:|--------------:|")
+        for lvl in sorted(level_dict.keys()):
+            total_states = sum(freq for (_, freq) in level_dict[lvl].values())
+            unique_states = len(level_dict[lvl])
+            print(f"| {lvl:<5} | {total_states:<12,} | {unique_states:<13,} |")
 
-        for level in sorted(level_counts.keys()):
-            total = f"{level_counts[level]:,}"
-            unique = f"{len(unique_states[level]):,}"
-            print(f"| {level:<5} | {total:<12} | {unique:<13} |")
 
     @staticmethod
     def print_states_at_level_sorted(root : GameState, target_depth : int):
@@ -304,5 +354,3 @@ class GameTree:
             # node.sequence is already a string
             sequence_str = node.sequence  
             print(f"| {sequence_str:<16} | {node.score_player1:<8} | {node.score_player2:<8} |")
-
-
