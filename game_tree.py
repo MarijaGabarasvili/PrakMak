@@ -1,7 +1,9 @@
 # GameState and GameTree classes for a simple game tree in Mākslīgā intelekta pamati course.
 # optimized by storing duplicates in one level as single nodes
-# v1, 24.03.2025 should be cleanded up and optimized
+
+# ------------------------------------------------------------------------------------------------------------
 # Janis Snikers
+# v1, 24.03.2025 should be cleanded up and optimized
 # ------------------------------------------------------------------------------------------------------------
 # @TODO CPU is not fully utilized. Need to explore optimization options. Currently tested up to 23 digits
 
