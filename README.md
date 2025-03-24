@@ -16,11 +16,10 @@ skaitļu pāris 10 dod 1 un atņem vienu punktu no spēlētāja punktu skaita;
 skaitļu pāris 11 dod 0 un dod  vienu punktu spēlētājam. 
 
 Katrā gājienā var aizvietot tikai vienu skaitļu pāri. Spēle beidzas, kad ir iegūts viens skaitlis. Uzvar spēlētājs, kam ir vairāk punktu. Ja punktu skaits ir vienāds, tad rezultāts ir neizšķirts. 
-<<<<<<< HEAD
-=======
 
 # ✨Python vide ar conda✨
 - jābūt uzinstalētai condai
 - ar komandu ```conda env create -f environment.yml``` var izveidot python environment, kurā ir visas vajadzīgās bibliotēkas
 - ar komandu ```conda env export --name mi_pamati --no-builds > environment.yml``` izeksportē environment failu priekš citiem
->>>>>>> parent of eebfcec (game_tree.py v1 only class files)
+
+
