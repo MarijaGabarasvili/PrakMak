@@ -9,7 +9,7 @@ Spēles sākumstāvoklis ir ģenerētā skaitļu virkne. Katram spēlētājam ir
 
 skaitļu pāris 00 dod 1 un 1 punktu spēlētāja punktu skaitam;  
 
-skaitļu pāris 01 dod 0 un atņemt 1 punktu no spēlētāja punktu skaita; 
+skaitļu pāris 01 dod 0 un atņemt 1 punktu no spēlētāja punktu skaita;
 
 skaitļu pāris 10 dod 1 un atņem vienu punktu no spēlētāja punktu skaita; 
 
