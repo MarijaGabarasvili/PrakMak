@@ -53,7 +53,7 @@ class GameTree:
     """Current move number (depth of the tree) in the game."""
     
     def __init__(self, sequence_length: int, depth_limit: int = 5):
-        self.initial_sequence = GameTree._generate_random_sequence(sequence_length)
+        self.initial_sequence = GameTree._generate_random_sequence(sequence_length) # Its genarated in main 
         self.root = GameState(
             self.initial_sequence, score_player1=0, score_player2=0
         )
@@ -222,7 +222,8 @@ class GameTree:
         # Current player logic
         current_player = 1 if depth % 2 == 0 else 2
 
-        # Determine new digit & score change
+        #make it a separate function so i can use it in the main file
+        # Determine new digit & score change 
         if pair == ('0', '0'):
             new_digit = '1'
             score_change = +1

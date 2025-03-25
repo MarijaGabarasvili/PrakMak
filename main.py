@@ -2,6 +2,7 @@
 import PySimpleGUI as sg
 import random
 
+
 layout = [
     [sg.Text("Choose Player:", font=("Helvetica", 16)), sg.Button("Player 1"), sg.Text("", size=(5, 1)), 
     sg.Text("", size=(15, 1)), sg.Button("Player 2"), sg.Text("", size=(15, 1))],
@@ -47,15 +48,20 @@ def rules(pressed):
 def new_window(length):
     line = [random.choice([0, 1]) for _ in range(length)] #take to the game tree file
     button_row = [sg.Button(str(num), key=f'-BTN_{i}-') for i, num in enumerate(line)]
+    current_player = start
+    
     new_layout = [
         [sg.Text("New Window", font=("Helvetica", 20))],
-        [sg.Text(f"Generated Sequence: {line}")],
+        [sg.Text(f"Generated Sequence: {line}", key='-SEQUENCE-')],
         button_row,
+        [sg.Text(f"Current Turn: Player {current_player}", key='-TURN-', font=("Helvetica", 14))],
         [sg.Button("Close")]
     ]
+    
     new_window = sg.Window("New Window", new_layout)
-    pressed_butt = []
-    while True:
+    
+    
+    while len(line) > 1:
         event, values = new_window.read()
         if event == sg.WINDOW_CLOSED or event == "Close":
             break
@@ -63,21 +69,36 @@ def new_window(length):
             index = int(event.split('_')[1].split('-')[0])
             if len(pressed_butt) < 2 and (not pressed_butt or abs(pressed_butt[-1] - index) == 1):
                 pressed_butt.append(index)
-                for i in range(length):
+                for i in range(len(line)):
                     if len(pressed_butt) == 1 and abs(index - i) == 1:
                         new_window[f'-BTN_{i}-'].update(disabled=False)
                     else:
                         new_window[f'-BTN_{i}-'].update(disabled=True)
                 new_window[event].update(disabled=True)
             if len(pressed_butt) == 2:
-                number = rules(pressed_butt)
-                line[pressed_butt[0]] = number
-                del line[pressed_butt[1]]
+                
+                selected_numbers = [line[pressed_butt[0]], line[pressed_butt[1]]]
+                number = rules(selected_numbers)
+                
+                first_index = pressed_butt[0]
+                second_index = pressed_butt[1]
+                line[first_index] = number
+                del line[second_index]
+                
                 new_window['-SEQUENCE-'].update(f"Generated Sequence: {line}")
                 for i in range(len(line)):
-                    new_window[f'-BTN_{i}-'].update(str(line[i]), disabled=False)
+                    new_window[f'-BTN_{i}-'].update(str(line[i]), disabled=False, visible=True)
+                for i in range(len(line), length):
+                    new_window[f'-BTN_{i}-'].update(visible=False)
+                    
+                current_player = 1 if current_player == 2 else 2
+                new_window['-TURN-'].update(f"Current Turn: Player {current_player}")
                 pressed_butt = []
-                break
+                
+    if len(line) == 1:
+        new_window['-TURN-'].update(f"Player {current_player} wins!")
+    
+           
     
 
 while True:
