@@ -59,14 +59,18 @@ def new_window(length):
     ]
     
     new_window = sg.Window("New Window", new_layout)
-    
+    pressed_butt = []
     
     while len(line) > 1:
+        
         event, values = new_window.read()
+        
         if event == sg.WINDOW_CLOSED or event == "Close":
             break
+
         if event.startswith('-BTN_'):
             index = int(event.split('_')[1].split('-')[0])
+
             if len(pressed_butt) < 2 and (not pressed_butt or abs(pressed_butt[-1] - index) == 1):
                 pressed_butt.append(index)
                 for i in range(len(line)):
@@ -75,6 +79,7 @@ def new_window(length):
                     else:
                         new_window[f'-BTN_{i}-'].update(disabled=True)
                 new_window[event].update(disabled=True)
+
             if len(pressed_butt) == 2:
                 
                 selected_numbers = [line[pressed_butt[0]], line[pressed_butt[1]]]
@@ -93,7 +98,9 @@ def new_window(length):
                     
                 current_player = 1 if current_player == 2 else 2
                 new_window['-TURN-'].update(f"Current Turn: Player {current_player}")
+
                 pressed_butt = []
+                
                 
     if len(line) == 1:
         new_window['-TURN-'].update(f"Player {current_player} wins!")
