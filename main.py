@@ -54,8 +54,9 @@ def new_window(length):
         [sg.Button("Close")]
     ]
     new_window = sg.Window("New Window", new_layout)
-    pressed_butt = []
+    
     while True:
+        pressed_butt = []
         event, values = new_window.read()
         if event == sg.WINDOW_CLOSED or event == "Close":
             break
@@ -76,8 +77,7 @@ def new_window(length):
                 new_window['-SEQUENCE-'].update(f"Generated Sequence: {line}")
                 for i in range(len(line)):
                     new_window[f'-BTN_{i}-'].update(str(line[i]), disabled=False)
-                pressed_butt = []
-                break
+                
     
 
 while True:
