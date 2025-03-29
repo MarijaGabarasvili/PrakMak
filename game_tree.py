@@ -3,7 +3,7 @@
 
 # ------------------------------------------------------------------------------------------------------------
 # Janis Snikers
-# v1, 24.03.2025 should be cleanded up and optimized
+# v1.1, 29.03.2025 modified init, so it also acccepts string as input, should be cleanded up and optimized
 # ------------------------------------------------------------------------------------------------------------
 # @TODO CPU is not fully utilized. Need to explore optimization options. Currently tested up to 23 digits
 
@@ -52,8 +52,13 @@ class GameTree:
     current_depth: int
     """Current move number (depth of the tree) in the game."""
     
-    def __init__(self, sequence_length: int, depth_limit: int = 5):
-        self.initial_sequence = GameTree._generate_random_sequence(sequence_length) # Its genarated in main 
+    def __init__(self, sequence, depth_limit: int = 5):
+        if isinstance(sequence, int) and sequence > 0:
+            self.initial_sequence = GameTree._generate_random_sequence(sequence)
+        elif isinstance(sequence, str) and all(c in '01' for c in sequence):
+            self.initial_sequence = sequence
+        else:
+            raise ValueError("Invalid sequence provided. Must be a integer length or string of '0's and '1's.")
         self.root = GameState(
             self.initial_sequence, score_player1=0, score_player2=0
         )
