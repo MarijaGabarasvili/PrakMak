@@ -77,7 +77,7 @@ class GameTree:
         """Advances the game to the next state based on the selected child node.
         Purges all children nodes that are not needed anymore and generates the next game tree level if needed."""
         #print(f"Moving from: {print(self.current_state)}\nto: {print(child_node)}")
-        print(f"Moving from: [{self.current_state}] to [{child_node}]")	
+        #print(f"Moving from: [{self.current_state}] to [{child_node}]")	
         if child_node not in self.current_state.children:
             raise ValueError("Given node is not a child of the current state.")
         self.current_state.children = [child_node]
