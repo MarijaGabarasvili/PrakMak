@@ -52,8 +52,13 @@ class GameTree:
     current_depth: int
     """Current move number (depth of the tree) in the game."""
     
-    def __init__(self, sequence_length: int, depth_limit: int = 5):
-        self.initial_sequence = GameTree._generate_random_sequence(sequence_length)
+    def __init__(self, sequence_length, depth_limit: int = 5):
+        if isinstance(sequence_length, int) and sequence_length > 0:
+            self.initial_sequence = GameTree._generate_random_sequence(sequence_length)
+        elif isinstance(sequence_length, str) and all(c in '01' for c in sequence_length):
+            self.initial_sequence = sequence_length
+        else:
+            raise ValueError("Invalid sequence provided. Must be a string of '0's and '1's.")
         self.root = GameState(
             self.initial_sequence, score_player1=0, score_player2=0
         )
