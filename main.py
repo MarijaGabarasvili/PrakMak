@@ -1,6 +1,9 @@
 # Should include GUI and the main logic of the program
+# Should include GUI and the main logic of the program
 import PySimpleGUI as sg
 import random
+import game_tree as gt
+import minimax as mm
 
 
 layout = [
@@ -72,7 +75,7 @@ def new_window(length):
     new_window = sg.Window("New Window", new_layout)
     pressed_butt = []
     
-    while len(line) > 0:
+    while True:
         if is_computer_1 or is_computer_2:
             if algorithm == 0:
                 # Minmax algorithm
@@ -134,13 +137,14 @@ def new_window(length):
                     current_player = 0
                     new_window['-TURN-'].update(f"Current Turn: {current_player + 1}")
                 pressed_butt = []
-                
-        if player1_points>player2_points:
-            new_window['-SEQUENCE-'].update(f"Player 1 wins with {player1_points} points!")
-        elif player2_points>player1_points:
-            new_window['-SEQUENCE-'].update(f"Player 2 wins with {player2_points} points!")
-        else:
-            new_window['-SEQUENCE-'].update(f"It's a tie!")
+
+            if len(line) == 1:     
+                if player1_points>player2_points:
+                    new_window['-SEQUENCE-'].update(f"Player 1 wins with {player1_points} points!")
+                elif player2_points>player1_points:
+                    new_window['-SEQUENCE-'].update(f"Player 2 wins with {player2_points} points!")
+                else:
+                    new_window['-SEQUENCE-'].update(f"It's a tie!")
         
     
            
