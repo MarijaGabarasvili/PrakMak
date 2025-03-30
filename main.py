@@ -72,7 +72,7 @@ def new_window(length):
     new_window = sg.Window("New Window", new_layout)
     pressed_butt = []
     
-    while len(line) > 1:
+    while len(line) > 0:
         if is_computer_1 or is_computer_2:
             if algorithm == 0:
                 # Minmax algorithm
@@ -83,6 +83,7 @@ def new_window(length):
                 # Implement the Alfa-beta algorithm here
                 pass
         else:
+            #maybe make a function for this
             event, values = new_window.read()
         
             if event == sg.WINDOW_CLOSED or event == "Close":
@@ -100,7 +101,7 @@ def new_window(length):
                             new_window[f'-BTN_{i}-'].update(disabled=True)
                     new_window[event].update(disabled=True)
 
-
+            #maybe make a function for this
             if len(pressed_butt) == 2:
                 selected_numbers = [line[pressed_butt[0]], line[pressed_butt[1]]]
                 number = rules(selected_numbers)
@@ -134,8 +135,13 @@ def new_window(length):
                     new_window['-TURN-'].update(f"Current Turn: {current_player + 1}")
                 pressed_butt = []
                 
-                
-        new_window['-TURN-'].update(f"Player {current_player + 1} wins!")
+        if player1_points>player2_points:
+            new_window['-SEQUENCE-'].update(f"Player 1 wins with {player1_points} points!")
+        elif player2_points>player1_points:
+            new_window['-SEQUENCE-'].update(f"Player 2 wins with {player2_points} points!")
+        else:
+            new_window['-SEQUENCE-'].update(f"It's a tie!")
+        
     
            
     
@@ -160,10 +166,11 @@ while True:
         is_computer_2= True
 
     #choose algorithm   
-    if event == "Minmax":
-        algorithm = 0
-    if event == "Alfa-beta":
-        algorithm = 1
+    match event:
+        case "Minmax":
+            algorithm = 0
+        case "Alfa-beta":
+            algorithm = 1
 
 
     if event == "Confirm":
