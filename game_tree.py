@@ -96,21 +96,18 @@ class GameTree:
         Advances the game by merging the pair at 'first_digit_to_join'.
         """
         # We simply call the _merge_pair helper once.
-        new_node = self._merge_pair(
+        new_state = self._create_child(
             parent_node=self.current_state, 
             first_digit_to_join=first_digit_to_join, 
             depth=self.current_depth
         )
         
-        # Replace children with only this newly chosen node
-        self.current_state.children = [new_node]
-
-        # Advance
-        self.current_state = new_node
-        self.current_depth += 1
-
-        # (Optional) expand the new node's children if within depth
-        self._build_tree()
+        for child in self.current_state.children:
+            if child.sequence == new_state.sequence:
+                new_state = child
+                break
+        
+        self.move_to_next_state_by_child(new_state)
         
     def get_current_player(self, at_depth=None) -> int:
         """Returns the current player (1 or 2)."""
@@ -118,6 +115,21 @@ class GameTree:
             at_depth = self.current_depth
         return 1 if at_depth % 2 == 0 else 2
 
+    def get_merged_pair_first_digit(self, parent_node: GameState, child_node: GameState) -> int:
+        """
+        Given a parent and child node, determines the first digit that was merged to get to the child.
+        """
+        parent_seq = parent_node.sequence
+        child_seq = child_node.sequence
+        parent_depth = len(self.initial_sequence) - len(parent_seq)
+        for i in range(len(parent_seq) - 1):
+            child = self._create_child(parent_node, i, parent_depth)
+            if child.sequence == child_seq:
+                return i
+        raise ValueError(f"Child {child_node} is not a valid child of parent {parent_node}")
+            
+    
+    
     def _build_tree(self):
         """
         Build the game tree up to self.depth_limit layers, unifying duplicate children
@@ -133,7 +145,7 @@ class GameTree:
             for node in current_layer:
                 # Only generate if node has length > 1 and hasn't generated children yet
                 if len(node.sequence) > 1 and not node.children:
-                    node.children = self._generate_children(node, parent_layer_depth)
+                    node.children = self._populate_children(node, parent_layer_depth)
 
                 # Keep track of (parent, [children]) to unify references
                 parents_and_children.append((node, node.children))
@@ -158,7 +170,7 @@ class GameTree:
             current_layer = next_layer
             parent_layer_depth += 1
               
-    def _merge_pair(self, parent_node: GameState, first_digit_to_join: int, depth: int) -> GameState:
+    def _create_child(self, parent_node: GameState, first_digit_to_join: int, depth: int) -> GameState:
         """
         Helper to produce a single child node by merging the two adjacent bits
         in parent_node.sequence starting at 'first_digit_to_join'.
@@ -207,7 +219,7 @@ class GameTree:
             score_player2=new_score_p2
         )
 
-    def _generate_children(self, parent_node: GameState, depth: int = 0):
+    def _populate_children(self, parent_node: GameState, depth: int = 0):
         """
         Generate all child GameStates, ensuring no duplicates are stored
         if (sequence, score_player1, score_player2) already exists.
@@ -215,7 +227,7 @@ class GameTree:
         children = []
         seen = set()
         for i in range(len(parent_node.sequence) - 1):
-            child = self._merge_pair(parent_node, i, depth)
+            child = self._create_child(parent_node, i, depth)
             child_key = (child.sequence, child.score_player1, child.score_player2)
             if child_key not in seen:
                 seen.add(child_key)

@@ -42,7 +42,7 @@ class ComputerPlayer:
         :return: A tuple (path, score) where path is a list of states and score is the heuristic score.
         """
         if self.algorithm == "minimax":
-            score, self.optimal_path = self._minimax2(state_node, is_maximizing, cache={})
+            score, self.optimal_path = self._minimax_cached(state_node, is_maximizing, cache={})
             #score, self.optimal_path = self._minimax(state_node, is_maximizing)
             return self.optimal_path, score
         elif self.algorithm == "alpha_beta":
@@ -110,8 +110,7 @@ class ComputerPlayer:
                     optimal_path = [state_node] + path
             return best_score, optimal_path
     
-    # update the minimax function to use the cache
-    def _minimax2(self, state_node, is_maximizing: bool, cache={}, depth=0):
+    def _minimax_cached(self, state_node, is_maximizing: bool, cache={}, depth=0):
         state_hash = (state_node.sequence, state_node.score_player1, state_node.score_player2)
         # print(f"{str_blue}Node {state_node}, Evaluating as maximizing? {is_maximizing}, Node values:{str_reset}")
         if state_hash in cache:
@@ -130,7 +129,7 @@ class ComputerPlayer:
         if is_maximizing:
             best_score = -float('inf')
             for child in state_node.children:
-                score, path = self._minimax2(child, False, cache, depth=depth+1)
+                score, path = self._minimax_cached(child, False, cache, depth=depth+1)
                 indent = '\t' * depth
                 # print(f"{indent}{str_red}Node {child}, score: {score}{str_reset}")
                 if score > best_score:
@@ -139,7 +138,7 @@ class ComputerPlayer:
         else:
             best_score = float('inf')
             for child in state_node.children:
-                score, path = self._minimax2(child, True, cache, depth=depth+1)
+                score, path = self._minimax_cached(child, True, cache, depth=depth+1)
                 indent = '\t' * depth
                 # print(f"{indent}{str_green}Node {child}, score: {score}{str_reset}")
                 if score < best_score:

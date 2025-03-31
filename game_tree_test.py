@@ -97,6 +97,6 @@ def test_3_traverse_by_positive_moves(sequence, depth_limit=5):
     GameTree.print_tree(game.root)
 
     
-#test_1_print_full_tree()        
+test_1_print_full_tree()        
 #test_2_how_big_tree_can_be_generated()
 test_3_traverse_by_positive_moves(10, 5)
