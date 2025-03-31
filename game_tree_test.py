@@ -10,10 +10,11 @@ from game_tree import GameTree
 # ------------------------------------------------------------------------------------------------------------
 def test_1_print_full_tree():
     print("# Test 1: Full tree")
-    depth_limit = sequence_length= 4
-    print(f"\n\n## Generating GameTree({sequence_length}) ")
+    depth_limit = 5
+    sequence= "01010"
+    print(f"\n\n## Generating GameTree({sequence}) ")
     start_time = time.time()
-    game = GameTree(sequence_length, depth_limit)
+    game = GameTree(sequence, depth_limit)
     time_elapsed = time.time() - start_time
     print(f"generation took {time_elapsed:.6f} seconds, it`s size:")
     GameTree.print_stats(game.root)
@@ -40,14 +41,12 @@ def test_2_how_big_tree_can_be_generated():
     print("")
     GameTree.print_unique_states(game.root)
 
-def test_3_traverse_by_positive_moves():
-    print("# Test 4: Random moves by selecting moves that yield +1 score for the current player, with fallback to any random move")
-    depth_limit = 7
-    sequence_length = 15
+def test_3_traverse_by_positive_moves(sequence, depth_limit=5):
+    print("# Test 3: Random moves by selecting moves that yield +1 score for the current player, with fallback to any random move")
 
-    print(f"\n\n## Generating GameTree({sequence_length}) ")
+    print(f"\n\n## Generating GameTree({sequence}) ")
     start_time = time.time()
-    game = GameTree(sequence_length, depth_limit)
+    game = GameTree(sequence, depth_limit)
     time_elapsed = time.time() - start_time
     print(f"Generation took {time_elapsed:.6f} seconds")
     GameTree.print_stats(game.root)
@@ -97,6 +96,7 @@ def test_3_traverse_by_positive_moves():
     print("\nGame ended. Final tree structure from root:")
     GameTree.print_tree(game.root)
 
+    
 #test_1_print_full_tree()        
-test_2_how_big_tree_can_be_generated()
-#test_3_traverse_by_positive_moves()
+#test_2_how_big_tree_can_be_generated()
+test_3_traverse_by_positive_moves(10, 5)

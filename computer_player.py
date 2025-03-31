@@ -1,6 +1,12 @@
 from game_tree import GameTree
 import time
 
+str_blue = "\033[34m"
+str_red = "\033[31m"
+str_green = "\033[32m"
+str_yellow = "\033[33m"
+str_reset = "\033[0m"
+
 class ComputerPlayer:
     def __init__(self, algorithm: str = "minimax"):
         """
@@ -36,7 +42,8 @@ class ComputerPlayer:
         :return: A tuple (path, score) where path is a list of states and score is the heuristic score.
         """
         if self.algorithm == "minimax":
-            score, self.optimal_path = self._minimax2(state_node, is_maximizing)
+            score, self.optimal_path = self._minimax2(state_node, is_maximizing, cache={})
+            #score, self.optimal_path = self._minimax(state_node, is_maximizing)
             return self.optimal_path, score
         elif self.algorithm == "alpha_beta":
             score, self.optimal_path = self._alpha_beta(state_node, is_maximizing)
@@ -70,11 +77,11 @@ class ComputerPlayer:
         p11 = self._get_count_of_subsequence(state.sequence, "11")
         p00 = self._get_count_of_subsequence(state.sequence, "00")
         
-        p2 = 1 if (p11 + p00) == 1 else 0
+        p2 = -1 if (p11 + p00) == 1 else 0
         
         state_score = state.score_player1 - state.score_player2
         
-        heuristic_score = state_score + pattern_3_scale * (p001 - p010 + p011 + p100 - p101 + p110 - p2)
+        heuristic_score = state_score + pattern_3_scale * (p001 - p010 + p011 + p100 - p101 + p110 + p2)
         return heuristic_score
 
     def _minimax(self, state_node, is_maximizing: bool):
@@ -84,7 +91,7 @@ class ComputerPlayer:
         if not state_node.children:
             score = self._get_heuristic_score(state_node)
             return score, [state_node]
-
+        
         optimal_path = []
         if is_maximizing:
             best_score = -float('inf')
@@ -104,9 +111,9 @@ class ComputerPlayer:
             return best_score, optimal_path
     
     # update the minimax function to use the cache
-    def _minimax2(self, state_node, is_maximizing: bool, cache={}):
+    def _minimax2(self, state_node, is_maximizing: bool, cache={}, depth=0):
         state_hash = (state_node.sequence, state_node.score_player1, state_node.score_player2)
-        
+        # print(f"{str_blue}Node {state_node}, Evaluating as maximizing? {is_maximizing}, Node values:{str_reset}")
         if state_hash in cache:
             return cache[state_hash]
         
@@ -114,6 +121,7 @@ class ComputerPlayer:
         
         if not state_node.children:
             score = self._get_heuristic_score(state_node)
+            #print(f"{str_yellow}\tGeting heuristic score for: {state_node} = {score}{str_reset}")
             cache[state_hash] = (score, [state_node])
             return score, [state_node]
         
@@ -122,14 +130,18 @@ class ComputerPlayer:
         if is_maximizing:
             best_score = -float('inf')
             for child in state_node.children:
-                score, path = self._minimax2(child, False, cache)
+                score, path = self._minimax2(child, False, cache, depth=depth+1)
+                indent = '\t' * depth
+                # print(f"{indent}{str_red}Node {child}, score: {score}{str_reset}")
                 if score > best_score:
                     best_score = score
                     optimal_path = [state_node] + path
         else:
             best_score = float('inf')
             for child in state_node.children:
-                score, path = self._minimax2(child, True, cache)
+                score, path = self._minimax2(child, True, cache, depth=depth+1)
+                indent = '\t' * depth
+                # print(f"{indent}{str_green}Node {child}, score: {score}{str_reset}")
                 if score < best_score:
                     best_score = score
                     optimal_path = [state_node] + path

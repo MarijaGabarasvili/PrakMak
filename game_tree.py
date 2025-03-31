@@ -12,6 +12,12 @@ import sys
 
 from collections import deque
 
+str_blue = "\033[34m"
+str_red = "\033[31m"
+str_green = "\033[32m"
+str_yellow = "\033[33m"
+str_reset = "\033[0m"
+
 class GameState:
     sequence: str
     """Sequence of '0' and '1' representing the current state."""
@@ -106,9 +112,120 @@ class GameTree:
         # (Optional) expand the new node's children if within depth
         self._build_tree()
         
-    def get_current_player(self):
+    def get_current_player(self, at_depth=None) -> int:
         """Returns the current player (1 or 2)."""
-        return 1 if self.current_depth % 2 == 0 else 2
+        if at_depth is None:
+            at_depth = self.current_depth
+        return 1 if at_depth % 2 == 0 else 2
+
+    def _build_tree(self):
+        """
+        Build the game tree up to self.depth_limit layers, unifying duplicate children
+        across each layer (i.e., if two parents at the same layer generate an identical
+        (sequence, score_p1, score_p2) child, they will reference the same child node).
+        """
+        current_layer = [self.current_state]
+        parent_layer_depth = self.current_depth
+        while parent_layer_depth < (self.current_depth + self.depth_limit):
+            parents_and_children = []
+
+            # 1) Generate children for each node in the current layer (if needed)
+            for node in current_layer:
+                # Only generate if node has length > 1 and hasn't generated children yet
+                if len(node.sequence) > 1 and not node.children:
+                    node.children = self._generate_children(node, parent_layer_depth)
+
+                # Keep track of (parent, [children]) to unify references
+                parents_and_children.append((node, node.children))
+
+            # 2) Unify duplicate children across the entire layer
+            layer_dict = {}  # maps (sequence, score_p1, score_p2) -> canonical GameState
+            for parent, child_list in parents_and_children:
+                for i, child in enumerate(child_list):
+                    key = (child.sequence, child.score_player1, child.score_player2)
+                    if key not in layer_dict:
+                        layer_dict[key] = child  # first time we see this child
+                    else:
+                        # Duplicate => replace the parent's child reference
+                        parent.children[i] = layer_dict[key]
+
+            # 3) Prepare the next layer
+            # All unique children are taken from layer_dict
+            next_layer = list(layer_dict.values())
+            if not next_layer:
+                break
+
+            current_layer = next_layer
+            parent_layer_depth += 1
+              
+    def _merge_pair(self, parent_node: GameState, first_digit_to_join: int, depth: int) -> GameState:
+        """
+        Helper to produce a single child node by merging the two adjacent bits
+        in parent_node.sequence starting at 'first_digit_to_join'.
+        """
+        seq = parent_node.sequence
+
+        # Safety check for index
+        if not (0 <= first_digit_to_join < len(seq) - 1):
+            raise ValueError(f"Invalid index {first_digit_to_join} for sequence {seq}")
+
+        # Determine the pair
+        pair = (seq[first_digit_to_join], seq[first_digit_to_join + 1])
+
+        #make it a separate function so i can use it in the main file
+        # Determine new digit & score change 
+        if pair == ('0', '0'):
+            new_digit = '1'
+            score_change = +1
+        elif pair == ('0', '1'):
+            new_digit = '0'
+            score_change = -1
+        elif pair == ('1', '0'):
+            new_digit = '1'
+            score_change = -1
+        elif pair == ('1', '1'):
+            new_digit = '0'
+            score_change = +1
+
+        # Construct new sequence
+        new_sequence = seq[:first_digit_to_join] + new_digit + seq[first_digit_to_join + 2:]
+        # Update scores
+        if self.get_current_player(depth) == 1:
+            new_score_p1 = parent_node.score_player1 + score_change
+            new_score_p2 = parent_node.score_player2
+        else:
+            new_score_p1 = parent_node.score_player1
+            new_score_p2 = parent_node.score_player2 + score_change
+        
+        if abs(score_change) > 1:
+            raise ValueError(f"Invalid score change: {score_change}, parent state: {parent_node}")
+        
+        # Create the new child node
+        return GameState(
+            sequence=new_sequence,
+            score_player1=new_score_p1,
+            score_player2=new_score_p2
+        )
+
+    def _generate_children(self, parent_node: GameState, depth: int = 0):
+        """
+        Generate all child GameStates, ensuring no duplicates are stored
+        if (sequence, score_player1, score_player2) already exists.
+        """
+        children = []
+        seen = set()
+        for i in range(len(parent_node.sequence) - 1):
+            child = self._merge_pair(parent_node, i, depth)
+            child_key = (child.sequence, child.score_player1, child.score_player2)
+            if child_key not in seen:
+                seen.add(child_key)
+                children.append(child)
+        return children
+
+    @staticmethod
+    def _generate_random_sequence(length: int) -> str:
+        """Generate a random string of '0's and '1's."""
+        return "".join(random.choice(['0','1']) for _ in range(length))
     
     @staticmethod       
     def print_tree(node, prefix="", is_last=True, level=0):
@@ -161,121 +278,7 @@ class GameTree:
 
         formated_node_count = f"{node_count:_}".replace("_", " ")
         print(f"{formated_node_count} nodes, {_get_readable_size(size_in_bytes)}")
-
-    def _build_tree(self):
-        """
-        Build the game tree up to self.depth_limit layers, unifying duplicate children
-        across each layer (i.e., if two parents at the same layer generate an identical
-        (sequence, score_p1, score_p2) child, they will reference the same child node).
-        """
-        current_layer = [self.root]
-        depth = 0
-
-        while depth < (self.depth_limit + self.current_depth):
-            parents_and_children = []
-
-            # 1) Generate children for each node in the current layer (if needed)
-            for node in current_layer:
-                # Only generate if node has length > 1 and hasn't generated children yet
-                if len(node.sequence) > 1 and not node.children:
-                    node.children = self._generate_children(node, depth)
-
-                # Keep track of (parent, [children]) to unify references
-                parents_and_children.append((node, node.children))
-
-            # 2) Unify duplicate children across the entire layer
-            layer_dict = {}  # maps (sequence, score_p1, score_p2) -> canonical GameState
-            for parent, child_list in parents_and_children:
-                for i, child in enumerate(child_list):
-                    key = (child.sequence, child.score_player1, child.score_player2)
-                    if key not in layer_dict:
-                        layer_dict[key] = child  # first time we see this child
-                    else:
-                        # Duplicate => replace the parent's child reference
-                        parent.children[i] = layer_dict[key]
-
-            # 3) Prepare the next layer
-            # All unique children are taken from layer_dict
-            next_layer = list(layer_dict.values())
-            if not next_layer:
-                break
-
-            current_layer = next_layer
-            depth += 1
-
-
-    @staticmethod
-    def _generate_random_sequence(length: int) -> str:
-        """Generate a random string of '0's and '1's."""
-        return "".join(random.choice(['0','1']) for _ in range(length))
-              
-    @staticmethod
-    def _merge_pair(parent_node: GameState, first_digit_to_join: int, depth: int) -> GameState:
-        """
-        Helper to produce a single child node by merging the two adjacent bits
-        in parent_node.sequence starting at 'first_digit_to_join'.
-        """
-        seq = parent_node.sequence
-
-        # Safety check for index
-        if not (0 <= first_digit_to_join < len(seq) - 1):
-            raise ValueError(f"Invalid index {first_digit_to_join} for sequence {seq}")
-
-        # Determine the pair
-        pair = (seq[first_digit_to_join], seq[first_digit_to_join + 1])
-
-        # Current player logic
-        current_player = 1 if depth % 2 == 0 else 2
-
-        #make it a separate function so i can use it in the main file
-        # Determine new digit & score change 
-        if pair == ('0', '0'):
-            new_digit = '1'
-            score_change = +1
-        elif pair == ('0', '1'):
-            new_digit = '0'
-            score_change = -1
-        elif pair == ('1', '0'):
-            new_digit = '1'
-            score_change = -1
-        elif pair == ('1', '1'):
-            new_digit = '0'
-            score_change = +1
-
-        # Construct new sequence
-        new_sequence = seq[:first_digit_to_join] + new_digit + seq[first_digit_to_join + 2:]
-
-        # Update scores
-        if current_player == 1:
-            new_score_p1 = parent_node.score_player1 + score_change
-            new_score_p2 = parent_node.score_player2
-        else:
-            new_score_p1 = parent_node.score_player1
-            new_score_p2 = parent_node.score_player2 + score_change
-
-        # Create the new child node
-        return GameState(
-            sequence=new_sequence,
-            score_player1=new_score_p1,
-            score_player2=new_score_p2
-        )
-
-    @staticmethod
-    def _generate_children(parent_node: GameState, depth: int = 0):
-        """
-        Generate all child GameStates, ensuring no duplicates are stored
-        if (sequence, score_player1, score_player2) already exists.
-        """
-        children = []
-        seen = set()
-        for i in range(len(parent_node.sequence) - 1):
-            child = GameTree._merge_pair(parent_node, i, depth)
-            child_key = (child.sequence, child.score_player1, child.score_player2)
-            if child_key not in seen:
-                seen.add(child_key)
-                children.append(child)
-        return children
-
+    
     @staticmethod
     def print_unique_states(game_tree_root: GameState):
         """

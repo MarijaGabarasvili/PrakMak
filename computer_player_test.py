@@ -1,6 +1,12 @@
 from computer_player import ComputerPlayer
 from game_tree import GameTree
 
+str_blue = "\033[34m"
+str_red = "\033[31m"
+str_green = "\033[32m"
+str_yellow = "\033[33m"
+str_reset = "\033[0m"
+
 def test_1_path_result_consistency(sequence_length_start, sequence_length_end):
     def test_seq(sequence):
         if isinstance(sequence, int):
@@ -47,38 +53,79 @@ def test_1_path_result_consistency(sequence_length_start, sequence_length_end):
         for _ in range(4): # 4 random sequences
             test_seq(n)
     
-def test_2_minimax_vs_alpha_beta_play(length):
-    if length < 9:
-        depth_limit = length
-    else:
-        depth_limit = 9
-    print(f"Generating game tree for seqeunce length {length} with depth limit {depth_limit}")
-    tree = GameTree(length, depth_limit)
-    print(f"Game tree generated. Sequence {tree.initial_sequence}, Playing game...")
+def test_2_minimax_vs_alpha_beta_play(sequence, depth_limit):
+
+    print(f"Generating game tree.")
+    tree = GameTree(sequence, depth_limit)
+    print(f"Game tree generated. Sequence {tree.initial_sequence}, depth limit:{depth_limit}, Playing game...")
     player1 = ComputerPlayer("minimax")
     player2 = ComputerPlayer("alpha_beta")
-    control_player = ComputerPlayer("alpha_beta")
+    player3 = ComputerPlayer("heuristic")
+    # control_player = ComputerPlayer("alpha_beta")
     
-    _, result = control_player.get_path(tree.root, True)
-    if result > 0:
-        print("\t\tPlayer 1 should win.")
-    elif result < 0:
-        print("\t\tPlayer 2 should win.")
-    else:
-        print("\t\tThe game should end in a draw.")
+    # _, result = control_player.get_path(tree.root, True)
+    # if result > 0:
+    #     print("\t\tPlayer 1 should win.")
+    # elif result < 0:
+    #     print("\t\tPlayer 2 should win.")
+    # else:
+    #     print("\t\tThe game should end in a draw.")
     
     while tree.current_state.children:
+        
         if tree.get_current_player() == 1:
-            path, _ = player1.get_path(tree.current_state, True)
-            print(f"\033[31m Move #{tree.current_depth + 1}, Player 1 chose {path[1]} \033[0m")
-            tree.move_to_next_state_by_child(path[1])
-        else:
-            path, _ = player2.get_path(tree.current_state, False)
-            print(f"\033[32m Move #{tree.current_depth + 1}, Player 2 chose {path[1]} \033[0m")
-            tree.move_to_next_state_by_child(path[1])
             
-    print("Game over. Result:")
+            
+            
+            print(f"{str_red}")
+            print(f"Move #{tree.current_depth} - {tree.current_state}, choice by Player 2:")
+            
+            path1, result1 = player1.get_path(tree.current_state, True)
+            print(f"\t{path1[1]} > end score > {result1}")
+            
+            path2, result2 = player2.get_path(tree.current_state, True)
+            print(f"\t{path2[1]} > end score > {result2}")
+            
+            path3, result3 = player3.get_path(tree.current_state, True)
+            print(f"\t{path3[1]} > end score > {result3}")
+            print(f"{str_reset}")
+            tree.move_to_next_state_by_child(path3[1])
+        else:
+            # for child in tree.current_state.children:
+            #     print(f"{child}, score {player2._get_heuristic_score(child)}")
+            
+            
+            
+            print(f"{str_green}")
+            print(f"Move #{tree.current_depth} - {tree.current_state}, choice by Player 2:")
+            
+            path1, result1 = player1.get_path(tree.current_state, False)
+            print(f"\t{path1[1]} > end score > {result1}")
+            
+            path2, result2 = player2.get_path(tree.current_state, False)
+            print(f"\t{path2[1]} > end score > {result2}")
+            
+            path3, result3 = player3.get_path(tree.current_state, False)
+            print(f"\t{path3[1]} > end score > {result3}")
+            
+            print(f"{str_reset}")
+            
+            tree.move_to_next_state_by_child(path3[1])
+    
+    print(f"{str_blue}Game over. ", end="")
+    
+    result = tree.current_state.score_player1 - tree.current_state.score_player2
+    if result > 0:
+        print(f"{str_red}Player 1 won by {result} points{str_reset}")
+    elif result < 0:
+        print(f"{str_green}Player 2 won by {abs(result)} points{str_reset}")
+    else:
+        print(f"{str_yellow}Draw{str_reset}")   
+    
     tree.print_tree(tree.root)
+    
+    
+    
     print(f"Player 1 (minimax) looked at {player1.nodes_visited} nodes,")
     print(f"Player 2 (alpha-beta) looked at {player2.nodes_visited} nodes.")
 
@@ -87,4 +134,14 @@ def test_2_minimax_vs_alpha_beta_play(length):
 
 
 # test_1_path_result_consistency(5, 9)
-test_2_minimax_vs_alpha_beta_play(9)
+test_2_minimax_vs_alpha_beta_play("000000101111010", 15)
+
+# └── Seq: 010011110 | Score (P1:P2): 0:0 |
+#         └── Seq: 00011110 | Score (P1:P2): -1:0 |
+#                 └── Seq: 1011110 | Score (P1:P2): -1:1 |
+#                         └── Seq: 100110 | Score (P1:P2): 0:1 |
+#                                 └── Seq: 10110 | Score (P1:P2): 0:0 |
+#                                         └── Seq: 1010 | Score (P1:P2): -1:0 |
+#                                                 └── Seq: 110 | Score (P1:P2): -1:-1 |
+#                                                         └── Seq: 00 | Score (P1:P2): 0:-1 |
+#                                                                 └── Seq: 1 | Score (P1:P2): 0:0 |
