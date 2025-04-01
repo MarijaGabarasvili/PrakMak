@@ -112,7 +112,6 @@ class ComputerPlayer:
     
     def _minimax_cached(self, state_node, is_maximizing: bool, cache={}, depth=0):
         state_hash = (state_node.sequence, state_node.score_player1, state_node.score_player2)
-        # print(f"{str_blue}Node {state_node}, Evaluating as maximizing? {is_maximizing}, Node values:{str_reset}")
         if state_hash in cache:
             return cache[state_hash]
         
@@ -120,7 +119,6 @@ class ComputerPlayer:
         
         if not state_node.children:
             score = self._get_heuristic_score(state_node)
-            #print(f"{str_yellow}\tGeting heuristic score for: {state_node} = {score}{str_reset}")
             cache[state_hash] = (score, [state_node])
             return score, [state_node]
         
@@ -131,7 +129,6 @@ class ComputerPlayer:
             for child in state_node.children:
                 score, path = self._minimax_cached(child, False, cache, depth=depth+1)
                 indent = '\t' * depth
-                # print(f"{indent}{str_red}Node {child}, score: {score}{str_reset}")
                 if score > best_score:
                     best_score = score
                     optimal_path = [state_node] + path
@@ -140,7 +137,6 @@ class ComputerPlayer:
             for child in state_node.children:
                 score, path = self._minimax_cached(child, True, cache, depth=depth+1)
                 indent = '\t' * depth
-                # print(f"{indent}{str_green}Node {child}, score: {score}{str_reset}")
                 if score < best_score:
                     best_score = score
                     optimal_path = [state_node] + path

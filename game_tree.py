@@ -9,6 +9,7 @@
 
 import random
 import sys
+import math
 
 from collections import deque
 
@@ -58,7 +59,7 @@ class GameTree:
     current_depth: int
     """Current move number (depth of the tree) in the game."""
     
-    def __init__(self, sequence, depth_limit: int = 5):
+    def __init__(self, sequence, dynamic_depth: bool = True, depth_limit: int = 5):
         if isinstance(sequence, int) and sequence > 0:
             self.initial_sequence = GameTree._generate_random_sequence(sequence)
         elif isinstance(sequence, str) and all(c in '01' for c in sequence):
@@ -68,6 +69,7 @@ class GameTree:
         self.root = GameState(
             self.initial_sequence, score_player1=0, score_player2=0
         )
+        self.dynamic_depth = dynamic_depth
         self.current_state = self.root
         self.depth_limit = depth_limit
         self.current_depth = 0
@@ -127,6 +129,16 @@ class GameTree:
     #         if child.sequence == child_seq:
     #             return i
     #     raise ValueError(f"Child {child_node} is not a valid child of parent {parent_node}")
+    
+    def _update_depth_limit(self):
+        # given sequence length 15 - 25, scales depth limit from 9 to 3
+        depth_limit = math.floor(-0.375 * len(self.current_state.sequence)+12.375)
+        if depth_limit < 3:
+            return 3
+        elif depth_limit > len(self.current_state.sequence):
+            return len(self.current_state.sequence)
+        return depth_limit
+        
             
     
     
@@ -136,6 +148,9 @@ class GameTree:
         across each layer (i.e., if two parents at the same layer generate an identical
         (sequence, score_p1, score_p2) child, they will reference the same child node).
         """
+        if self.dynamic_depth:
+            self.depth_limit = self._update_depth_limit()
+        print(f"Building tree, depth limit {self.depth_limit}...")
         current_layer = [self.current_state]
         parent_layer_depth = self.current_depth
             

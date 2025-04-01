@@ -9,7 +9,7 @@ str_green = "\033[32m"
 str_yellow = "\033[33m"
 str_reset = "\033[0m"
 
-default_depth_limit = 6
+default_depth_limit = 15
 
 class GameGUI:
     player1_type : str
@@ -213,7 +213,6 @@ while True:
             t_start = time.time()
             game_tree.move_to_next_state_by_move(first_digit_to_join)
             timer = time.time() - t_start
-            print(f"human move done in {timer:.6f} seconds")
         else:
             optimal_path, _ = pc_player.get_path(game_tree.current_state, is_player1)
             game_tree.move_to_next_state_by_child(optimal_path[1])
