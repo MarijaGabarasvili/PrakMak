@@ -74,11 +74,8 @@ def test_2_minimax_vs_alpha_beta_play(sequence, depth_limit):
     while tree.current_state.children:
         
         if tree.get_current_player() == 1:
-            
-            
-            
             print(f"{str_red}")
-            print(f"Move #{tree.current_depth} - {tree.current_state}, choice by Player 2:")
+            print(f"Move #{tree.current_depth} - {tree.current_state}, choice by Player 1:")
             
             path1, result1 = player1.get_path(tree.current_state, True)
             print(f"\t{path1[1]} > end score > {result1}")
