@@ -9,7 +9,7 @@ str_green = "\033[32m"
 str_yellow = "\033[33m"
 str_reset = "\033[0m"
 
-default_depth_limit = 15
+default_depth_limit = 5
 
 class GameGUI:
     player1_type : str
@@ -24,7 +24,7 @@ class GameGUI:
                         'PC (Alpha-Beta)': 'alpha_beta',
                         'PC (Greedy)': 'heuristic'
                     }
-    _default_sequence_length : int = 15
+    _default_sequence_length : int = 10
     
     def __init__(self):
         sg.theme('DarkGrey11')
@@ -39,7 +39,7 @@ class GameGUI:
             [sg.Column([[]], size=(1, 1), pad=(2, 2))],
             [sg.Text("Player 2:"), sg.Push(), sg.Combo(list(self._player_types.keys()), default_value='PC (Minimax)', key='P2', size=(18, 1))],
             [sg.Column([[]], size=(1, 1), pad=(2, 2))],
-            [sg.Text("Length of sequence (15-25):"), sg.Push(), sg.InputText(default_text=f'{self._default_sequence_length}', key='SEQ', size=(5, 1))],
+            [sg.Text("Length of sequence (1-25):"), sg.Push(), sg.InputText(default_text=f'{self._default_sequence_length}', key='SEQ', size=(5, 1))],
             [sg.Text('', pad=(0, (1, 1)))],
             [sg.Push(), sg.Button("Start", size=(10,1)), sg.Push()]
         ]
@@ -54,15 +54,15 @@ class GameGUI:
             if event == "Start":
                 try:
                     seq_length = int(values['SEQ'])
-                    if 15 <= seq_length <= 25:
+                    if 1 <= seq_length <= 25:
                         break
                     else:
-                        sg.popup_error("Length must be between 15 and 25!")
-                        window['SEQ'].update(f'{self._default_sequence_length}')
+                        sg.popup_error("Length must be between 1 and 25!")
+                        window['SEQ'].update(f'{self.default_sequence_length}')
                         
                 except ValueError:
                     sg.popup_error("Please enter a valid number for sequence length.")
-                    window['SEQ'].update(f'{self._default_sequence_length}')
+                    window['SEQ'].update(f'{self.default_sequence_length}')
 
         window.close()
         
@@ -74,28 +74,18 @@ class GameGUI:
         self._button_keys = [f"BTN_{i}" for i in range(self.intial_sequence_len)]
         layout = [
                 [sg.Text("Player 1:", pad=(0, 0)), sg.Text('0', key='text_score_p1', size=(3, 1), justification='left', pad=(0, 0)),
-                sg.Push(), sg.Text("Click two adjacent buttons to remove them", key="text_msg"),sg.Push(),
+                sg.Push(), sg.Text("Click two adjacent buttons to remove them"),sg.Push(),
                 sg.Text("Player 2:", pad=(0, 0)), sg.Text('0', key='text_score_p2', size=(3, 1), justification='left', pad=(0, 0))],
-                [sg.Column([[]], size=(1, 1), pad=(2, 2))],
                 [sg.Push(), *[sg.Button(char, key=key, size=(2, 1), pad=(0, 0), font=("Helvetica", 10)) for char, key in zip(game_sequence, self._button_keys)], sg.Push()]
             ]
-        self._play_game_window = sg.Window("Match buttons", layout, size=(550, 80), finalize=True)
+        self._play_game_window = sg.Window("Match buttons", layout, size=(550, 100), finalize=True)
 
-    def game_finished(self, str_player_won, score_player1, score_player2, nodes_visited_player1, nodes_visited_player2):
+    def game_finished(self, str_player_won):
         layout = [
-            [sg.Push(), sg.Text(f"{score_player1} : {score_player2}", font=("Helvetica", 16)), sg.Push()],
-            [sg.Column([[]], size=(1, 1), pad=(2, 2))],
             [sg.Push(), sg.Text(str_player_won, font=("Helvetica", 14)), sg.Push()],
             [sg.Column([[]], size=(1, 1), pad=(2, 2))],
             [sg.Push(), sg.Button("Exit", size=(10,1)), sg.Push(), sg.Button("Restart", size=(10,1)), sg.Push()]
         ]
-        
-        if nodes_visited_player2 != None:
-            layout.insert(3, [sg.Push(), sg.Text(f"Player 2 nodes visited: {nodes_visited_player2}", font=("Helvetica", 10)), sg.Push()])
-        if nodes_visited_player1 != None:
-            layout.insert(3, [sg.Push(), sg.Text(f"Player 1 nodes visited: {nodes_visited_player1}", font=("Helvetica", 10)), sg.Push()])
-        
-        
         self._play_game_window.close()
         window = sg.Window("Game Over", layout)
         
@@ -157,82 +147,78 @@ class GameGUI:
 
     def update_score(self, score_player1, score_player2):
         """
-        Update the score texts on the gameplay GUI.
+        Update the score texts on the GUI.
         """
         self._play_game_window['text_score_p1'].update(score_player1)
         self._play_game_window['text_score_p2'].update(score_player2)
-    
-    def update_msg(self, msg):
-        """"
-        Update the message text on the gameplay GUI.
-        """
-        self._play_game_window['text_msg'].update(msg)
 
 gui = GameGUI()
 
 while True:
-    # counting is only valid if one of the players is human and the other is a computer
-    total_pc_move_time = 0
-    total_human_move_time = 0
-    total_pc_moves = 0
-    total_human_moves = 0
-    
     print(f"{str_blue}Starting game: {gui.player1_type} vs {gui.player2_type}, Sequence Length: {gui.intial_sequence_len}{str_reset}")
 
-    print(f"{str_blue}Generating game tree")
+    print(f"{str_blue}Generating game tree... ", end="")
     timer = time.time()
     game_tree = GameTree(gui.intial_sequence_len, default_depth_limit)
     timer = time.time() - timer
     print(f"done in {timer:.6f} seconds, starting sequence {game_tree.initial_sequence}, depth limit {game_tree.depth_limit}\n{str_reset}")
-    
+    gui.open_game_dialog(game_tree.initial_sequence)
+
+    game_start_time = time.time()
+
     predicted_score = None
     if gui.player1_type != 'human':
         pc_player1 = ComputerPlayer(gui.player1_type)
         path, predicted_score = pc_player1.get_path(game_tree.current_state, True)
-        print(f"{str_blue}Player 1 predicted score: {predicted_score}{str_reset}")
     else:
         pc_player1 = None
         
     if gui.player2_type != 'human':
         pc_player2 = ComputerPlayer(gui.player2_type)
         path, predicted_score = pc_player2.get_path(game_tree.current_state, True)
-        print(f"{str_blue}Player 2 predicted score: {predicted_score}{str_reset}")
     else:
         pc_player2 = None
 
-    print(f"{str_blue}\nGame started.\n{str_reset}")
-    
-    gui.open_game_dialog(game_tree.initial_sequence)
+    print(f"{str_blue}Game started. {str_reset}", end="")
+    if predicted_score != None:
+        if predicted_score > 0:
+            print(f"{str_red}Player 1 predicted to win.\n{str_reset}")
+        elif predicted_score < 0:
+            print(f"{str_green}Player 2 predicted to win.\n{str_reset}")
+        else:
+            print(f"{str_yellow}The game is predicted to end in a draw.\n{str_reset}")
+    else:
+        print("\n")
+
+    total_computer_move_time = 0
+    computer_move_count = 0
 
     while game_tree.current_state.children:
         is_player1 = game_tree.get_current_player() == 1
         player_type = gui.player1_type if is_player1 else gui.player2_type
         pc_player = pc_player1 if is_player1 else pc_player2
         player_label = "Player 1" if is_player1 else "Player 2"
-        gui.update_msg(f"{player_label} ({player_type}) move")
         color = str_red if is_player1 else str_green
 
-        print(f"{color}Move #{game_tree.current_depth} - {game_tree.current_state} {player_label} move:")
+        print(f"{color}Move #{game_tree.current_depth} - {game_tree.current_state} {player_label} move:", end="")
 
         if player_type == 'human':
-            timer_start = time.time()
             first_digit_to_join = gui.get_user_move()
-            move_time = time.time() - timer_start
-            total_human_move_time += move_time
-            total_human_moves += 1
             game_tree.move_to_next_state_by_move(first_digit_to_join)
         else:
-            timer_start = time.time()
+            move_start_time = time.time()
             optimal_path, _ = pc_player.get_path(game_tree.current_state, is_player1)
-            move_time = time.time() - timer_start
+            move_end_time = time.time()
+            total_computer_move_time += (move_end_time - move_start_time)
+            computer_move_count += 1
             game_tree.move_to_next_state_by_child(optimal_path[1])
-            total_pc_move_time += move_time
-            total_pc_moves += 1
-            
 
-        print(f"\t\t{game_tree.current_state}, time {(move_time):.9f}s{str_reset}")
+        print(f"{game_tree.current_state}{str_reset}")
         gui.update_sequence(game_tree.current_state.sequence)
         gui.update_score(game_tree.current_state.score_player1, game_tree.current_state.score_player2)
+
+    game_end_time = time.time()
+    game_duration = game_end_time - game_start_time
 
     if game_tree.current_state.score_player1 > game_tree.current_state.score_player2:
         str_player_won = "Player 1 wins!"
@@ -240,20 +226,20 @@ while True:
         str_player_won = "Player 2 wins!"
     else:
         str_player_won = "It's a draw!"
+    
             
-    print(f"{str_blue}\nGame over. {str_player_won}\n{str_reset}")
+    print(f"{str_blue}Game over. {str_player_won}{str_reset}")
+    print(f"{str_blue}Game duration: {game_duration:.2f} seconds{str_reset}")
     if pc_player1 != None:
-        player1_nodes_visited = pc_player1.nodes_visited
-        print(f"{str_blue}Game tree nodes visited by Player 1 ({pc_player1.algorithm}): {player1_nodes_visited}, average move time: {(total_pc_move_time/total_pc_moves):.6f}s{str_reset}")
-    else:
-        player1_nodes_visited = None
-        
+        print(f"{str_blue}Game tree nodes visited by Player 1 ({pc_player1.algorithm}): {pc_player1.nodes_visited}{str_reset}")
     if pc_player2 != None:
-        player2_nodes_visited = pc_player2.nodes_visited
-        print(f"{str_blue}Game tree nodes visited by Player 2 ({pc_player2.algorithm}): {player2_nodes_visited}, total moves: {total_pc_moves}, total move time: {total_pc_move_time:.9}s, average move time: {(total_pc_move_time/total_pc_moves):.9f}s{str_reset}")
+        print(f"{str_blue}Game tree nodes visited by Player 2 ({pc_player2.algorithm}): {pc_player2.nodes_visited}{str_reset}")
+
+    if computer_move_count > 0:
+        average_computer_move_time = total_computer_move_time / computer_move_count
+        print(f"{str_blue}Average time for computer moves: {average_computer_move_time:.2f} seconds{str_reset}")
     else:
-        player2_nodes_visited = None
-        
-        
-    gui.game_finished(str_player_won, game_tree.current_state.score_player1, game_tree.current_state.score_player2, player1_nodes_visited, player2_nodes_visited)
+        print(f"{str_blue}No computer moves were made in this game.{str_reset}")
+            
+    gui.game_finished(str_player_won)
     gui.set_settings_dialog()
