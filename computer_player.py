@@ -24,7 +24,7 @@ class ComputerPlayer:
         if algorithm not in valid_algorithms:
             raise ValueError("Unsupported algorithm. Choose minimax, alpha_beta, or heuristic.")
         self.algorithm = algorithm
-        self.nodes_visited = 0  # Counter for visited nodes
+        self.nodes_visited = 0
         optimal_path = None
 
     def reset_counter(self):
@@ -43,11 +43,9 @@ class ComputerPlayer:
         """
         if self.algorithm == "minimax":
             score, self.optimal_path = self._minimax_cached(state_node, is_maximizing, cache={})
-            #score, self.optimal_path = self._minimax(state_node, is_maximizing)
             return self.optimal_path, score
         elif self.algorithm == "alpha_beta":
             score, self.optimal_path = self._alpha_beta_cached(state_node, is_maximizing, cache={})
-            #score, self.optimal_path = self._alpha_beta(state_node, is_maximizing)
             return self.optimal_path, score
         elif self.algorithm == "heuristic":
             score, self.optimal_path = self._heuristic_path(state_node, is_maximizing)
@@ -84,32 +82,6 @@ class ComputerPlayer:
         
         heuristic_score = state_score + pattern_3_scale * (p001 - p010 + p011 + p100 - p101 + p110 + p2)
         return heuristic_score
-
-    def _minimax(self, state_node, is_maximizing: bool):
-        # Count this node visit.
-        self.nodes_visited += 1
-
-        if not state_node.children:
-            score = self._get_heuristic_score(state_node)
-            return score, [state_node]
-        
-        optimal_path = []
-        if is_maximizing:
-            best_score = -float('inf')
-            for child in state_node.children:
-                score, path = self._minimax(child, False)
-                if score > best_score:
-                    best_score = score
-                    optimal_path = [state_node] + path
-            return best_score, optimal_path
-        else:
-            best_score = float('inf')
-            for child in state_node.children:
-                score, path = self._minimax(child, True)
-                if score < best_score:
-                    best_score = score
-                    optimal_path = [state_node] + path
-            return best_score, optimal_path
     
     def _minimax_cached(self, state_node, is_maximizing: bool, cache={}, depth=0):
         state_hash = (state_node.sequence, state_node.score_player1, state_node.score_player2)
@@ -145,49 +117,14 @@ class ComputerPlayer:
         cache[state_hash] = (best_score, optimal_path)
         return best_score, optimal_path
 
-    def _alpha_beta(self, state_node, is_maximizing, alpha=-float('inf'), beta=float('inf')):
-        # Count this node visit.
-        self.nodes_visited += 1
-
-        if not state_node.children:
-            score = self._get_heuristic_score(state_node)
-            return score, [state_node]
-
-        optimal_path = []
-        if is_maximizing:
-            max_eval = -float('inf')
-            for child in state_node.children:
-                eval, path = self._alpha_beta(child, False, alpha, beta)
-                if eval > max_eval:
-                    max_eval = eval
-                    optimal_path = [state_node] + path
-                alpha = max(alpha, eval)
-                if beta <= alpha:
-                    break
-            return max_eval, optimal_path
-        else:
-            min_eval = float('inf')
-            for child in state_node.children:
-                eval, path = self._alpha_beta(child, True, alpha, beta)
-                if eval < min_eval:
-                    min_eval = eval
-                    optimal_path = [state_node] + path
-                beta = min(beta, eval)
-                if beta <= alpha:
-                    break
-            return min_eval, optimal_path
-
     def _alpha_beta_cached(self, state_node, is_maximizing, alpha=-float('inf'), beta=float('inf'), cache={}):
-        # Create a unique hash for the current state.
         state_hash = (state_node.sequence, state_node.score_player1, state_node.score_player2)
         
-        # If this state has been computed before, return the cached value.
         if state_hash in cache:
             return cache[state_hash]
         
         self.nodes_visited += 1
-        
-        # Terminal node: evaluate and cache.
+
         if not state_node.children:
             score = self._get_heuristic_score(state_node)
             result = (score, [state_node])
@@ -232,7 +169,6 @@ class ComputerPlayer:
         Greedy recursive approach: at each node, choose the child with the best immediate heuristic score.
         Returns a tuple (score, path), where score is the heuristic score at the terminal node.
         """
-        # Count this node visit.
         self.nodes_visited += 1
 
         if not state_node.children:
@@ -247,7 +183,6 @@ class ComputerPlayer:
                 if child_score > best_score:
                     best_score = child_score
                     best_child = child
-            # Recurse with the chosen child (flip the maximizing flag)
             score, path = self._heuristic_path(best_child, False)
             return score, [state_node] + path
         else:

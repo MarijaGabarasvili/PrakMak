@@ -1,12 +1,3 @@
-# GameState and GameTree classes for a simple game tree in Mākslīgā intelekta pamati course.
-# optimized by storing duplicates in one level as single nodes
-
-# ------------------------------------------------------------------------------------------------------------
-# Janis Snikers
-# v1.1, 29.03.2025 modified init, so it also acccepts string as input, should be cleanded up and optimized
-# ------------------------------------------------------------------------------------------------------------
-# @TODO CPU is not fully utilized. Need to explore optimization options. Currently tested up to 23 digits
-
 import random
 import sys
 import math
@@ -30,10 +21,10 @@ class GameState:
     """List of subsequent states."""
     
     def __init__(self, sequence : str, score_player1 : int, score_player2 : int):
-        self.sequence = sequence              # Now stored as a string of '0' and '1'
+        self.sequence = sequence
         self.score_player1 = score_player1
         self.score_player2 = score_player2
-        self.children = []                    # List of subsequent states
+        self.children = []
 
     def __repr__(self):
         return (f"Seq: {self.sequence} | "
@@ -84,8 +75,6 @@ class GameTree:
     def move_to_next_state_by_child(self, child_node : GameState):
         """Advances the game to the next state based on the selected child node.
         Purges all children nodes that are not needed anymore and generates the next game tree level if needed."""
-        #print(f"Moving from: {print(self.current_state)}\nto: {print(child_node)}")
-        #print(f"Moving from: [{self.current_state}] to [{child_node}]")	
         if child_node not in self.current_state.children:
             raise ValueError("Given node is not a child of the current state.")
         self.current_state.children = [child_node]
@@ -97,7 +86,6 @@ class GameTree:
         """
         Advances the game by merging the pair at 'first_digit_to_join'.
         """
-        # We simply call the _merge_pair helper once.
         new_state = self._create_child(
             parent_node=self.current_state, 
             first_digit_to_join=first_digit_to_join, 
@@ -116,22 +104,8 @@ class GameTree:
         if at_depth is None:
             at_depth = self.current_depth
         return 1 if at_depth % 2 == 0 else 2
-
-    # def get_merged_pair_first_digit(self, parent_node: GameState, child_node: GameState) -> int:
-    #     """
-    #     Given a parent and child node, determines the first digit that was merged to get to the child.
-    #     """
-    #     parent_seq = parent_node.sequence
-    #     child_seq = child_node.sequence
-    #     parent_depth = len(self.initial_sequence) - len(parent_seq)
-    #     for i in range(len(parent_seq) - 1):
-    #         child = self._create_child(parent_node, i, parent_depth)
-    #         if child.sequence == child_seq:
-    #             return i
-    #     raise ValueError(f"Child {child_node} is not a valid child of parent {parent_node}")
     
     def _update_depth_limit(self):
-        # given sequence length 15 - 25, scales depth limit from 9 to 3
         depth_limit = math.floor(-0.375 * len(self.current_state.sequence)+12.375)
         if depth_limit < 3:
             return 3
@@ -284,7 +258,6 @@ class GameTree:
 
         def traverse(n: GameState):
             nonlocal node_count, size_in_bytes
-            # Use 'id(n)' to ensure we only count a node object once
             if id(n) in visited:
                 return
             visited.add(id(n))
@@ -294,15 +267,14 @@ class GameTree:
             for child in n.children:
                 traverse(child)
 
-        # Start traversal
         traverse(node)
         
         def _get_readable_size(size_in_bytes: int) -> str:
-            if size_in_bytes >= 1024**3:  # 1 GB or more
+            if size_in_bytes >= 1024**3:
                 return f"{size_in_bytes // 1024**3} GB"
-            elif size_in_bytes >= 1024**2:  # 1 MB or more
+            elif size_in_bytes >= 1024**2:
                 return f"{size_in_bytes // 1024**2} MB"
-            elif size_in_bytes >= 1024:  # 1 KB or more
+            elif size_in_bytes >= 1024:
                 return f"{size_in_bytes // 1024} KB"
             else:
                 return f"{size_in_bytes} Bytes"  # Less than 1 KB
@@ -321,7 +293,6 @@ class GameTree:
             print("Tree is empty.")
             return
 
-        # Dictionary mapping level -> { node_id: (node, frequency) }
         level_dict = {}
         level_dict[0] = { id(game_tree_root): (game_tree_root, 1) }
         current_level = 0
@@ -340,7 +311,6 @@ class GameTree:
                         next_level[child_id] = (existing_node, existing_freq + freq)
                     else:
                         next_level[child_id] = (child, freq)
-            # If no nodes at the next level, stop
             if not next_level:
                 break
             level_dict[current_level + 1] = next_level
@@ -387,12 +357,10 @@ class GameTree:
         # Sort nodes by (sequence, player 1 score, player 2 score)
         level_nodes.sort(key=lambda n: (n.sequence, n.score_player1, n.score_player2))
 
-        # Print table
         print(f"\n### Nodes at Level {target_depth}")
         print("| Sequence        | P1 Score | P2 Score |")
         print("|----------------|----------|----------|")
 
         for node in level_nodes:
-            # node.sequence is already a string
             sequence_str = node.sequence  
             print(f"| {sequence_str:<16} | {node.score_player1:<8} | {node.score_player2:<8} |")

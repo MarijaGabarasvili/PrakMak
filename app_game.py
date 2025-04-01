@@ -171,6 +171,12 @@ class GameGUI:
 gui = GameGUI()
 
 while True:
+    # counting is only valid if one of the players is human and the other is a computer
+    total_pc_move_time = 0
+    total_human_move_time = 0
+    total_pc_moves = 0
+    total_human_moves = 0
+    
     print(f"{str_blue}Starting game: {gui.player1_type} vs {gui.player2_type}, Sequence Length: {gui.intial_sequence_len}{str_reset}")
 
     print(f"{str_blue}Generating game tree")
@@ -209,15 +215,22 @@ while True:
         print(f"{color}Move #{game_tree.current_depth} - {game_tree.current_state} {player_label} move:")
 
         if player_type == 'human':
+            timer_start = time.time()
             first_digit_to_join = gui.get_user_move()
-            t_start = time.time()
+            move_time = time.time() - timer_start
+            total_human_move_time += move_time
+            total_human_moves += 1
             game_tree.move_to_next_state_by_move(first_digit_to_join)
-            timer = time.time() - t_start
         else:
+            timer_start = time.time()
             optimal_path, _ = pc_player.get_path(game_tree.current_state, is_player1)
+            move_time = time.time() - timer_start
             game_tree.move_to_next_state_by_child(optimal_path[1])
+            total_pc_move_time += move_time
+            total_pc_moves += 1
+            
 
-        print(f"\t\t{game_tree.current_state}{str_reset}")
+        print(f"\t\t{game_tree.current_state}, time {(move_time):.9f}s{str_reset}")
         gui.update_sequence(game_tree.current_state.sequence)
         gui.update_score(game_tree.current_state.score_player1, game_tree.current_state.score_player2)
 
@@ -231,15 +244,16 @@ while True:
     print(f"{str_blue}\nGame over. {str_player_won}\n{str_reset}")
     if pc_player1 != None:
         player1_nodes_visited = pc_player1.nodes_visited
-        print(f"{str_blue}Game tree nodes visited by Player 1 ({pc_player1.algorithm}): {player1_nodes_visited}{str_reset}")
+        print(f"{str_blue}Game tree nodes visited by Player 1 ({pc_player1.algorithm}): {player1_nodes_visited}, average move time: {(total_pc_move_time/total_pc_moves):.6f}s{str_reset}")
     else:
         player1_nodes_visited = None
         
     if pc_player2 != None:
         player2_nodes_visited = pc_player2.nodes_visited
-        print(f"{str_blue}Game tree nodes visited by Player 2 ({pc_player2.algorithm}): {player2_nodes_visited}{str_reset}")
+        print(f"{str_blue}Game tree nodes visited by Player 2 ({pc_player2.algorithm}): {player2_nodes_visited}, total moves: {total_pc_moves}, total move time: {total_pc_move_time:.9}s, average move time: {(total_pc_move_time/total_pc_moves):.9f}s{str_reset}")
     else:
         player2_nodes_visited = None
+        
         
     gui.game_finished(str_player_won, game_tree.current_state.score_player1, game_tree.current_state.score_player2, player1_nodes_visited, player2_nodes_visited)
     gui.set_settings_dialog()
