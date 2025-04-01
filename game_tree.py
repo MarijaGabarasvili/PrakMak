@@ -115,18 +115,18 @@ class GameTree:
             at_depth = self.current_depth
         return 1 if at_depth % 2 == 0 else 2
 
-    def get_merged_pair_first_digit(self, parent_node: GameState, child_node: GameState) -> int:
-        """
-        Given a parent and child node, determines the first digit that was merged to get to the child.
-        """
-        parent_seq = parent_node.sequence
-        child_seq = child_node.sequence
-        parent_depth = len(self.initial_sequence) - len(parent_seq)
-        for i in range(len(parent_seq) - 1):
-            child = self._create_child(parent_node, i, parent_depth)
-            if child.sequence == child_seq:
-                return i
-        raise ValueError(f"Child {child_node} is not a valid child of parent {parent_node}")
+    # def get_merged_pair_first_digit(self, parent_node: GameState, child_node: GameState) -> int:
+    #     """
+    #     Given a parent and child node, determines the first digit that was merged to get to the child.
+    #     """
+    #     parent_seq = parent_node.sequence
+    #     child_seq = child_node.sequence
+    #     parent_depth = len(self.initial_sequence) - len(parent_seq)
+    #     for i in range(len(parent_seq) - 1):
+    #         child = self._create_child(parent_node, i, parent_depth)
+    #         if child.sequence == child_seq:
+    #             return i
+    #     raise ValueError(f"Child {child_node} is not a valid child of parent {parent_node}")
             
     
     
@@ -138,6 +138,7 @@ class GameTree:
         """
         current_layer = [self.current_state]
         parent_layer_depth = self.current_depth
+            
         while parent_layer_depth < (self.current_depth + self.depth_limit):
             parents_and_children = []
 
@@ -169,6 +170,9 @@ class GameTree:
 
             current_layer = next_layer
             parent_layer_depth += 1
+            
+        self._last_build_layer = current_layer
+        self._last_build_depth = parent_layer_depth
               
     def _create_child(self, parent_node: GameState, first_digit_to_join: int, depth: int) -> GameState:
         """
